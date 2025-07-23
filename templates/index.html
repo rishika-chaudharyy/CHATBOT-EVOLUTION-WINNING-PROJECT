@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cognizance - Seek, Ask, Understand</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #6a11cb, #8aabe3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      color: #fff;
+    }
+
+    h1 {
+      font-size: 40px;
+      margin-bottom: 5px;
+      color: #fff;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 300;
+      margin-bottom: 30px;
+      color: #f0e9ff;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .box {
+      flex: 1 1 400px;
+      padding: 20px;
+      background-color: #ffffff22;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+    }
+
+    .image-box input,
+    .query-box input,
+    .query-box select,
+    .query-box button {
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    .query-box button {
+      background-color: #8e2de2;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .query-box button:hover {
+      background-color: #6a11cb;
+    }
+
+    .image-box img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .response-box {
+      margin-top: 30px;
+      background-color: #ffffff22;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 1000px;
+      color: #fff;
+      display: none;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .response-box h3 {
+      margin-top: 0;
+    }
+
+    #userQuery {
+      width: calc(100% - 22px);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Cognizance</h1>
+  <h2>Seek, Ask, Understand</h2>
+
+  <div class="container">
+    <div class="box image-box">
+      <h3>Upload Image</h3>
+      <input type="file" id="imageUpload" accept="image/*">
+      <img id="uploadedImage" alt="Uploaded Image">
+    </div>
+
+    <div class="box query-box">
+      <h3>Ask Your Query</h3>
+      <input type="text" id="userQuery" placeholder="Enter your query here">
+
+      <select id="eliOption">
+        <option value="">Select Explanation Mode</option>
+        <option>Explain like I am a patient</option>
+        <option>Explain like I am a doctor</option>
+        <option>Explain like I am a customer</option>
+        <option>Explain like I am a customer service provider</option>
+        <option>Explain like I am a student</option>
+        <option>Explain like I am a teacher</option>
+      </select>
+
+      <select id="languageSelect">
+        <option value="en">English</option>
+        <option value="hi">Hindi</option>
+        <option value="es">Spanish</option>
+        <option value="fr">French</option>
+      </select>
+
+      <select id="voiceSelect"></select>
+
+      <button onclick="startSpeechToText()">🎤 Speak Query</button>
+      <button onclick="submitQuery()">📤 Submit Query</button>
+      <button onclick="setReminder()">⏰ Set Timer</button>
+      <button onclick="generateQuiz()">🧠 Generate Quiz</button>
+    </div>
+  </div>
+
+  <div class="response-box" id="responseBox">
+    <h3>Response
+      <button onclick="downloadResponse()">⬇️ Download</button>
+      <button onclick="summarizeResponse()">📝 Summarize</button>
+      <button onclick="speakResponse()">🔊 Speak</button>
+      <button onclick="stopSpeaking()">⏹️ Stop</button>
+      <button onclick="rate('up')">👍</button>
+      <button onclick="rate('down')">👎</button>
+    </h3>
+    <p id="responseText"></p>
+    <p id="feedback"></p>
+    <p id="summary"></p>
+  </div>
+
+  <script>
+    let imageFile = null;
+    let utterance;
+
+    document.getElementById('imageUpload').addEventListener('change', function (event) {
+      imageFile = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = document.getElementById('uploadedImage');
+        img.src = e.target.result;
+        img.style.display = 'block';
+      };
+      reader.readAsDataURL(imageFile);
+    });
+
+    function startSpeechToText() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = document.getElementById('languageSelect').value || 'en-US';
+      recognition.start();
+
+      recognition.onresult = function (event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('userQuery').value = transcript;
+      };
+
+      recognition.onerror = function (event) {
+        alert('Speech recognition error: ' + event.error);
+      };
+    }
+
+    function submitQuery() {
+      const queryText = document.getElementById('userQuery').value;
+      const eliMode = document.getElementById('eliOption').value;
+
+      if (!imageFile || !queryText) {
+        alert('Please upload an image and enter a query!');
+        return;
+      }
+
+      const finalQuery = eliMode ? `${eliMode}. ${queryText}` : queryText;
+
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      formData.append('query', finalQuery);
+
+      const responseBox = document.getElementById('responseBox');
+      const responseText = document.getElementById('responseText');
+      responseBox.style.display = 'none';
+      responseText.textContent = 'Processing...';
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+        .then(response => response.json())
+        .then(data => {
+          responseText.textContent = data.response || 'No response received.';
+          responseBox.style.display = 'block';
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          responseText.textContent = 'An error occurred. Please try again.';
+          responseBox.style.display = 'block';
+        });
+    }
+
+    function speakResponse() {
+      const response = document.getElementById('responseText').textContent;
+      const selectedVoice = document.getElementById('voiceSelect').value;
+      if (response) {
+        utterance = new SpeechSynthesisUtterance(response);
+        const voices = speechSynthesis.getVoices();
+        const voice = voices.find(v => v.name === selectedVoice);
+        if (voice) utterance.voice = voice;
+        speechSynthesis.speak(utterance);
+      }
+    }
+
+    function stopSpeaking() {
+      speechSynthesis.cancel();
+    }
+
+    function rate(feedback) {
+      const fbText = feedback === 'up' ? '✅ You liked the response!' : '❌ You disliked the response!';
+      document.getElementById('feedback').textContent = fbText;
+    }
+
+    function summarizeResponse() {
+      const fullText = document.getElementById('responseText').textContent;
+      if (fullText.length > 50) {
+        const summary = fullText.split('.').slice(0, 2).join('.') + '...';
+        document.getElementById('summary').textContent = 'Summary: ' + summary;
+      }
+    }
+
+    function downloadResponse() {
+      const query = document.getElementById('userQuery').value;
+      const response = document.getElementById('responseText').textContent;
+      const now = new Date();
+      const content = `Query: ${query}\n\nResponse: ${response}\n\nTime: ${now.toLocaleString()}`;
+      const blob = new Blob([content], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'response.txt';
+      a.click();
+    }
+
+    function setReminder() {
+      const timeString = prompt("⏰ Enter reminder time in HH:MM:SS format (24-hour clock):");
+
+      // Validate time format using RegEx
+      const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+      if (!timeRegex.test(timeString)) {
+        alert("❌ Invalid format. Please enter time like 09:15:00 (HH:MM:SS, 24-hour clock)");
+        return;
+      }
+
+      const [targetHour, targetMinute, targetSecond] = timeString.split(':').map(Number);
+
+      const now = new Date();
+      const targetTime = new Date();
+
+      targetTime.setHours(targetHour);
+      targetTime.setMinutes(targetMinute);
+      targetTime.setSeconds(targetSecond);
+
+      // If the time is in the past today, set it for tomorrow
+      if (targetTime <= now) {
+        targetTime.setDate(targetTime.getDate() + 1);
+      }
+
+      const delay = targetTime.getTime() - now.getTime();
+      const formattedTarget = targetTime.toLocaleTimeString();
+
+      alert(`⏳ Reminder set for ${formattedTarget}`);
+
+      setTimeout(() => {
+        alert("⏰ Time to take your medicine!");
+        const reminderSpeech = new SpeechSynthesisUtterance("Time to take your medicine!");
+        speechSynthesis.speak(reminderSpeech);
+      }, delay);
+    }
+
+
+    function generateQuiz() {
+      alert("🧠 Quiz generation coming soon!");
+    }
+
+    function populateVoices() {
+      const voiceSelect = document.getElementById('voiceSelect');
+      voiceSelect.innerHTML = '';
+      const voices = speechSynthesis.getVoices();
+      voices.forEach(voice => {
+        const option = document.createElement('option');
+        option.value = voice.name;
+        option.textContent = `${voice.name} (${voice.lang})`;
+        voiceSelect.appendChild(option);
+      });
+    }
+
+    speechSynthesis.onvoiceschanged = populateVoices;
+    window.onload = populateVoices;
+  </script>
+</body>
+
+</html>
