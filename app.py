@@ -62,4 +62,5 @@ def upload_image_and_query():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
+

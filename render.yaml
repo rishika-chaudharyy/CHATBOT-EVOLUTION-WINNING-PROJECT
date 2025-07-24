@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: cognizance-app
+    env: python
+    buildCommand: ""
+    startCommand: gunicorn app:app
+    envVars:
+      - key: GEMINI_API_KEY
+        value: your-real-api-key-will-be-set-in-render
